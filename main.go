@@ -8,20 +8,28 @@ import (
 	"os"
 )
 
-// Expected output
-type Result struct {
-	Market                        int     `json:"market"`
-	Total_volume                  float64 `json:"total_volume"`
-	Mean_price                    float64 `json:"mean_price"`
-	Mean_volume                   float64 `json:"mean_volume"`
-	Volume_weighted_average_price float64 `json:"volume_weighted_average_price"`
-	Percentage_buy                float32 `json:"percentage_buy"`
+type PrettyData struct {
+	Market                        int    `json:"market"`
+	Total_volume                  string `json:"total_volume"`
+	Mean_price                    string `json:"mean_price"`
+	Mean_volume                   string `json:"mean_volume"`
+	Percentage_buy                string `json:"percentage_buy"`
+	Volume_weighted_average_price string `json:"volume_weighted_average_price"`
 }
 
 type Store struct {
-	transactions        int
-	volume, total_price float64
-	buy                 int
+	// Required for computation
+	transactions int
+	total_price  float64
+	buy          int
+
+	// Expected output
+	market                        int
+	total_volume                  float64
+	mean_price                    float64
+	mean_volume                   float64
+	percentage_buy                float32
+	volume_weighted_average_price float64
 }
 
 type Trade struct {
@@ -32,6 +40,7 @@ type Trade struct {
 	Is_buy bool    `json:"is_buy"`
 }
 
+// Define a global singleton
 var record [13000]Store
 
 func main() {
@@ -55,35 +64,42 @@ func main() {
 		}
 	}
 
-	for i, s := range record {
+	for _, s := range record {
+
+		// Checks if market was traded, if it wasn't, s would be an empty struct
 		if (Store{} != s) {
-			r, err := json.Marshal(Result{
-				Market:                        i,
-				Total_volume:                  s.volume,
-				Mean_price:                    s.total_price / float64(s.transactions),
-				Mean_volume:                   s.volume / float64(s.transactions),
-				Volume_weighted_average_price: s.total_price / s.volume,
-				Percentage_buy:                float32(s.buy) / float32(s.transactions),
-			})
+			pd := PrettyData{
+				Market:                        s.market,
+				Total_volume:                  fmt.Sprintf("%.2f", s.total_volume),
+				Mean_price:                    fmt.Sprintf("%.5f", s.mean_price),
+				Mean_volume:                   fmt.Sprintf("%.2f", s.mean_volume),
+				Volume_weighted_average_price: fmt.Sprintf("%.2f", s.volume_weighted_average_price),
+				Percentage_buy:                fmt.Sprintf("%.2f%%", s.percentage_buy*100),
+			}
+			r, err := json.Marshal(pd)
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
 				fmt.Println(string(r))
-				fmt.Println(s.transactions)
+				// print number of transactions
+				// fmt.Println(s.transactions)
 			}
 		}
 	}
 }
 
 func process(t Trade) {
-	m := t.Market
-	record[m].transactions += 1
-	record[m].volume += t.Volume
-	record[m].total_price += (t.Price * t.Volume)
-	// record[m].mean_price = record[m].total_price / record[m].volume
-	// record[m].mean_volume = record[m].volume / float64(record[m].transactions)
+
+	record[t.Market].market = t.Market
+	record[t.Market].transactions += 1
+	record[t.Market].total_volume += t.Volume
+	record[t.Market].total_price += (t.Price * t.Volume)
+	record[t.Market].mean_price = record[t.Market].total_price / record[t.Market].total_volume
+	record[t.Market].mean_volume = record[t.Market].total_volume / float64(record[t.Market].transactions)
+	record[t.Market].volume_weighted_average_price = record[t.Market].total_price / record[t.Market].total_volume
 
 	if t.Is_buy {
-		record[m].buy += 1
+		record[t.Market].buy += 1
 	}
+	record[t.Market].percentage_buy = float32(record[t.Market].buy) / float32(record[t.Market].transactions)
 }
