@@ -1,0 +1,6 @@
+stdoutinator*
+*.bak
+*.bin
+*.zip
+*_output
+.DS_Store
