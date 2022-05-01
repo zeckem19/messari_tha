@@ -5,7 +5,14 @@ Defines 3 structs -
 
 A fixed-length (13000) array `record` is used which has an index that corresponds to the `market` being traded.
 
-At first I took an approach where I tried to minimize the amount of computation for each trade and generate expected output after the 10 million trades are completed. This made sense since there were more trades than markets. To do this, I determined that `Store` only needs 4 fields - number of transactions, the total volume, the total price for that trade and number of buy orders. The expected output can be computed from these 4 sets of information
+At first I took an approach where I tried to minimize the amount of computation for each trade and generate expected output (at the end) after the 10 million trades are completed. This made sense since there were more trades than markets. To do this, I determined that `Store` only needs 4 fields 
+
+1. number of transactions
+2. the total volume
+3. the total price for that trade
+4. number of buy orders. 
+   
+The expected output can be computed from these 4 sets of information
 
 1. total_volume (self explanatory)
 2. mean_price: total_price / num_of_transactions
@@ -13,8 +20,7 @@ At first I took an approach where I tried to minimize the amount of computation 
 4. Volume_weighted_average_price: total_price / total_volume
 5. Percentage_buy: num_buy / num_of_transactions
 
-However, computing at the end meant that the stats would not be available until all the trades are completed. I then changed my approach to keep track of these in real-time. Hence, `Store` would need the total_price field and some of the above logic would need to be done in the `process` function.
-
+However, computing at the end meant that the stats would not be available until all the trades are completed. I then changed my approach to keep track of these in real-time. Hence, `Store` would need the total_price field and some of the above logic would need to be done in the `process` function. The `process` function thus updates all the above fields, on top of the number of transactions and buy orders.
 
 Results 
 
